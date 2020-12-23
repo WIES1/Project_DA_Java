@@ -2,46 +2,52 @@ package com.hemebiotech.analytics;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-/**
- * Simple brute force implementation
- *
- */
-public class ReadSymptomDataFromFile implements ISymptomReader {
+public class AnalyticsCounter {
+	private final static List<String> symptomsList = new ArrayList<>();
+	public static final String SYMPTOMS_TXT = "symptoms.txt";
+	public static final String RESULT_OUT = "result.out";
 
-	private String filepath;
-	
-	/**
-	 * 
-	 * @param filepath a full or partial path to file with symptom strings in it, one per line
-	 */
-	public ReadSymptomDataFromFile (String filepath) {
-		this.filepath = filepath;
+	public static void main(String args[]) throws Exception {
+		final BufferedReader reader = new BufferedReader(new FileReader(SYMPTOMS_TXT));
+		fillSymptomsList(reader);
+		writeResultsToFile();
+		reader.close();
+
 	}
-	
-	@Override
-	public List<String> GetSymptoms() {
-		ArrayList<String> result = new ArrayList<String>();
-		
-		if (filepath != null) {
-			try {
-				BufferedReader reader = new BufferedReader (new FileReader(filepath));
-				String line = reader.readLine();
-				
-				while (line != null) {
-					result.add(line);
-					line = reader.readLine();
-				}
-				reader.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+
+	private static void writeResultsToFile() throws IOException {
+		final FileWriter writer = new FileWriter(RESULT_OUT);
+		Map<String, Long> collect = symptomsList.stream()
+				.collect(
+						Collectors.groupingBy(
+								Function.identity(), Collectors.counting()
+						));
+		collect.entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.forEach(value -> {
+					try {
+						writer.write(value.getKey() + " " + value.getValue() + "\n");
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+		writer.close();
+	}
+
+
+	private static void fillSymptomsList(BufferedReader reader) throws IOException {
+		String line = reader.readLine();
+		while (line != null) {
+			symptomsList.add(line);
+			line = reader.readLine();
 		}
-		
-		return result;
 	}
-
 }
